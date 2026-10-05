@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#070c11">
+<meta name="description" content="Buscador quirúrgico de catálogos industriales - Informática Aplicada - Técnico Mecánico">
+<title>Buscador Quirúrgico de Catálogos Industriales</title>
+<style>
+  /* ============================================================
+     VARIABLES Y RESET
+     ============================================================ */
+  :root{
+    --bg:#070c11;
+    --panel-a:#101a23;
+    --panel-b:#0b1319;
+    --line:#1d2c38;
+    --line2:#263a4a;
+    --cyan:#22d3ee;
+    --green:#4ade80;
+    --orange:#fb923c;
+    --txt:#e8f3f8;
+    --muted:#8aa4b6;
+    --mono: ui-monospace, SFMono-Regular, "Roboto Mono", Menlo, Consolas, "Courier New", monospace;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html{ -webkit-text-size-adjust:100%; }
+
+  body{
+    margin:0;
+    padding:0 0 118px 0;
+    color:var(--txt);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    background:
+      radial-gradient(900px 420px at 50% -8%, rgba(34,211,238,.10), transparent 65%),
+      linear-gradient(rgba(29,44,56,.42) 1px, transparent 1px) 0 0/100% 30px,
+      linear-gradient(90deg, rgba(29,44,56,.42) 1px, transparent 1px) 0 0/30px 100%,
+      var(--bg);
+    background-attachment:fixed;
+    overflow-x:hidden;
+  }
+
+  /* ============================================================
+     CABECERA
+     ============================================================ */
+  .app-header{
+    max-width:760px;
+    margin:0 auto;
+    padding:24px 16px 16px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:var(--mono);
+    font-size:9.5px;
+    letter-spacing:1.8px;
+    text-transform:uppercase;
+    color:var(--cyan);
+    margin-bottom:12px;
+  }
+  .brand .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 10px var(--green);
+    animation:pulse 1.9s ease-in-out infinite;
+    flex:none;
+  }
+  @keyframes pulse{ 50%{ opacity:.3; } }
+
+  .app-header h1{
+    margin:0 0 9px;
+    font-size:23px;
+    line-height:1.18;
+    letter-spacing:-.3px;
+    color:#ffffff;
+  }
+  .app-header .sub{
+    margin:0;
+    font-size:12.5px;
+    line-height:1.5;
+    color:var(--muted);
+  }
+
+  /* ============================================================
+     LAYOUT DE TARJETAS
+     ============================================================ */
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:0 14px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+
+  .card{
+    position:relative;
+    background:linear-gradient(180deg, var(--panel-a), var(--panel-b));
+    border:1px solid var(--line);
+    border-radius:15px;
+    padding:14px;
+    overflow:hidden;
+  }
+  .card::after{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:3px;
+    background:linear-gradient(180deg, var(--cyan), transparent 85%);
+    opacity:.55;
+  }
+
+  .card-head{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .num{
+    flex:none;
+    font-family:var(--mono);
+    font-size:10.5px;
+    font-weight:700;
+    color:#04141b;
+    background:var(--cyan);
+    padding:2px 7px;
+    border-radius:6px;
+    letter-spacing:.5px;
+  }
+  .card-head h2{
+    margin:0;
+    font-size:13.5px;
+    letter-spacing:.7px;
+    text-transform:uppercase;
+    color:#cfe9f3;
+    font-weight:700;
+  }
+
+  .hint{
+    margin:0 0 12px;
+    font-size:12.5px;
+    line-height:1.55;
+    color:var(--muted);
+  }
+  .hint b{ color:#bfe9f5; }
+
+  /* ============================================================
+     CAMPOS DE ENTRADA
+     ============================================================ */
+  .field{ margin-bottom:11px; }
+  .field:last-child{ margin-bottom:0; }
+
+  .field label{
+    display:block;
+    font-size:10.5px;
+    letter-spacing:.8px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:6px;
+    font-weight:600;
+  }
+
+  input[type="text"], textarea{
+    width:100%;
+    background:#08121a;
+    border:1px solid var(--line2);
+    border-radius:11px;
+    color:var(--txt);
+    padding:13px 12px;
+    font-size:16px;   /* evita zoom automático en Android */
+    font-family:inherit;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  textarea{
+    font-size:15px;
+    line-height:1.55;
+    resize:vertical;
+    min-height:120px;
+  }
+  input[type="text"]::placeholder, textarea::placeholder{ color:#4d6a7c; }
+
+  input[type="text"]:focus, textarea:focus{
+    outline:none;
+    border-color:var(--cyan);
+    box-shadow:0 0 0 3px rgba(34,211,238,.13);
+  }
+
+  /* ============================================================
+     SELECTOR DE DIÁMETRO
+     ============================================================ */
+  .d-grid{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:8px;
+  }
+  .d-btn{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+    padding:11px 4px;
+    background:#0d1a24;
+    border:1px solid var(--line2);
+    border-radius:12px;
+    color:var(--txt);
+    font-family:var(--mono);
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .2s, border-color .2s, transform .12s, box-shadow .2s;
+  }
+  .d-btn span{
+    font-size:9.5px;
+    font-weight:400;
+    color:var(--muted);
+    letter-spacing:.4px;
+  }
+  .d-btn:active{ transform:scale(.96); }
+  .d-btn.active{
+    background:linear-gradient(180deg,#0e3d49,#0a2630);
+    border-color:var(--cyan);
+    color:#a5f3fc;
+    box-shadow:0 0 0 3px rgba(34,211,238,.14);
+  }
+  .d-btn.active span{ color:#67e8f9; }
+
+  /* ============================================================
+     MATRIZ DEL CATÁLOGO
+     ============================================================ */
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:11px;
+    border:1px solid var(--line);
+  }
+  table.matriz{
+    width:100%;
+    min-width:330px;
+    border-collapse:collapse;
+    font-family:var(--mono);
+    font-size:13px;
+    background:#08121a;
+  }
+  table.matriz th{
+    background:#0d2029;
+    color:#7fd8ea;
+    font-size:10.5px;
+    letter-spacing:.4px;
+    padding:9px 4px;
+    text-align:center;
+    border-bottom:1px solid var(--line2);
+    white-space:nowrap;
+  }
+  table.matriz td{
+    padding:10px 4px;
+    text-align:center;
+    color:#b9d2df;
+    border-bottom:1px solid rgba(38,58,74,.45);
+    transition:background .35s ease, color .35s ease, box-shadow .35s ease;
+  }
+  table.matriz tr:last-child td{ border-bottom:none; }
+
+  tr.row-active td{
+    background:rgba(74,222,128,.09);
+    color:#d7ffe6;
+  }
+  tr.row-active td.c-d{
+    color:var(--green);
+    font-weight:700;
+    box-shadow:inset 3px 0 0 var(--green);
+    background:rgba(74,222,128,.14);
+  }
+  tr.row-active td.cell-ret{
+    background:rgba(251,146,60,.20);
+    color:#ffd9b3;
+    font-weight:700;
+  }
+
+  /* ============================================================
+     FÓRMULA BUSCARX
+     ============================================================ */
+  .formula{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    margin-top:12px;
+    padding:11px;
+    background:#08121a;
+    border:1px dashed var(--line2);
+    border-radius:11px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    line-height:1.6;
+  }
+  .fx{ color:#6f8fa3; }
+  .chip{
+    padding:3px 9px;
+    border-radius:7px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .chip.blue{
+    background:rgba(34,211,238,.14);
+    border:1px solid rgba(34,211,238,.45);
+    color:var(--cyan);
+  }
+  .chip.green{
+    background:rgba(74,222,128,.13);
+    border:1px solid rgba(74,222,128,.45);
+    color:var(--green);
+  }
+  .chip.orange{
+    background:rgba(251,146,60,.14);
+    border:1px solid rgba(251,146,60,.45);
+    color:var(--orange);
+  }
+  .formula-legend{
+    margin-top:9px;
+    font-size:11px;
+    line-height:1.7;
+    color:var(--muted);
+  }
+  .formula-legend b{ color:#bfe9f5; font-weight:600; }
+
+  /* ============================================================
+     TARJETAS DE RESULTADO
+     ============================================================ */
+  .serie-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:6px 12px;
+    border-radius:9px;
+    background:rgba(34,211,238,.10);
+    border:1px solid rgba(34,211,238,.35);
+    color:var(--cyan);
+    font-family:var(--mono);
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:.8px;
+    margin-bottom:12px;
+  }
+
+  .result-grid{
+    display:grid;
+    grid-template-columns:repeat(2, 1fr);
+    gap:9px;
+  }
+  .res-card{
+    display:flex;
+    flex-direction:column;
+    gap:3px;
+    background:#08121a;
+    border:1px solid var(--line2);
+    border-radius:12px;
+    padding:12px;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .res-card.highlight{
+    border-color:rgba(251,146,60,.5);
+    box-shadow:0 0 0 2px rgba(251,146,60,.10);
+  }
+  .res-label{
+    font-size:10px;
+    letter-spacing:.7px;
+    text-transform:uppercase;
+    color:var(--muted);
+    font-weight:600;
+  }
+  .res-val{
+    font-family:var(--mono);
+    font-size:23px;
+    font-weight:700;
+    color:var(--cyan);
+    line-height:1.15;
+  }
+  .res-card.highlight .res-val{ color:var(--orange); }
+  .res-sub{
+    font-size:10px;
+    color:#5e7a8c;
+    line-height:1.35;
+  }
+
+  /* ============================================================
+     CONVERSIÓN DE UNIDADES
+     ============================================================ */
+  .conv{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    gap:8px;
+    margin-bottom:11px;
+  }
+  .conv:last-of-type{ margin-bottom:0; }
+
+  .conv-box{
+    background:#08121a;
+    border:1px solid var(--line2);
+    border-radius:11px;
+    padding:10px 6px;
+    text-align:center;
+  }
+  .conv-box .lbl{
+    display:block;
+    font-size:9.5px;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:3px;
+  }
+  .conv-box .val{
+    font-family:var(--mono);
+    font-size:16px;
+    font-weight:700;
+    color:var(--cyan);
+    white-space:nowrap;
+  }
+  .conv-box.out .val{ color:var(--green); }
+
+  .conv-op{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--orange);
+    white-space:nowrap;
+    text-align:center;
+    line-height:1.3;
+  }
+  .conv-op small{
+    display:block;
+    font-size:9px;
+    color:#5e7a8c;
+  }
+
+  .conv-note{
+    margin-top:12px;
+    padding:10px 11px;
+    border-radius:10px;
+    background:rgba(251,146,60,.07);
+    border:1px solid rgba(251,146,60,.25);
+    font-size:11.5px;
+    line-height:1.55;
+    color:#f0c39a;
+  }
+
+  /* ============================================================
+     CONSIGNAS
+     ============================================================ */
+  .consignas{
+    margin:0 0 13px;
+    padding-left:20px;
+    font-size:12.5px;
+    line-height:1.62;
+    color:#a9c2d1;
+  }
+  .consignas li{ margin-bottom:7px; }
+  .consignas li::marker{ color:var(--cyan); font-weight:700; }
+
+  /* ============================================================
+     BOTÓN DE DESCARGA
+     ============================================================ */
+  .download-bar{
+    position:fixed;
+    left:0; right:0; bottom:0;
+    z-index:60;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg, rgba(7,12,17,0) 0%, rgba(7,12,17,.96) 42%);
+    pointer-events:none;
+  }
+  .btn-download{
+    pointer-events:auto;
+    display:block;
+    width:100%;
+    max-width:760px;
+    margin:0 auto;
+    padding:16px 14px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(180deg,#25d366,#15803d);
+    color:#03130a;
+    font-size:15.5px;
+    font-weight:800;
+    letter-spacing:.3px;
+    font-family:inherit;
+    cursor:pointer;
+    box-shadow:0 10px 26px rgba(34,197,94,.28);
+    transition:transform .12s ease, box-shadow .2s;
+  }
+  .btn-download:active{
+    transform:scale(.98);
+    box-shadow:0 5px 14px rgba(34,197,94,.22);
+  }
+
+  /* ============================================================
+     TOAST
+     ============================================================ */
+  .toast{
+    position:fixed;
+    left:50%;
+    top:18px;
+    transform:translate(-50%, -140%);
+    z-index:90;
+    max-width:88vw;
+    padding:12px 18px;
+    border-radius:11px;
+    background:#0e3d49;
+    border:1px solid var(--cyan);
+    color:#c9f6ff;
+    font-size:13px;
+    font-weight:600;
+    text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.5);
+    transition:transform .35s cubic-bezier(.2,.9,.3,1.3), opacity .3s;
+    opacity:0;
+    pointer-events:none;
+  }
+  .toast.show{
+    transform:translate(-50%, 0);
+    opacity:1;
+  }
+
+  /* ============================================================
+     PIE
+     ============================================================ */
+  .foot{
+    max-width:760px;
+    margin:6px auto 0;
+    padding:0 16px;
+    font-size:10.5px;
+    line-height:1.6;
+    color:#4d6a7c;
+    text-align:center;
+  }
+
+  @media (min-width:560px){
+    .app-header h1{ font-size:28px; }
+    .d-grid{ grid-template-columns:repeat(6, 1fr); }
+    .result-grid{ grid-template-columns:repeat(4, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== CABECERA ==================== -->
+<header class="app-header">
+  <div class="brand"><span class="dot"></span> Informática Aplicada · Técnico Mecánico</div>
+  <h1>Buscador Quirúrgico<br>de Catálogos Industriales</h1>
+  <p class="sub">Minería de Datos Industriales · Lectura, extracción y procesamiento digital de catálogos técnicos.</p>
+</header>
+
+<main class="wrap">
+
+  <!-- ==================== 01 · DATOS DEL ESTUDIANTE ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">01</span><h2>Datos del Estudiante</h2></div>
+    <div class="field">
+      <label for="nombre">Nombre y Apellido</label>
+      <input id="nombre" type="text" placeholder="Ej.: Juan Pérez" autocomplete="name" enterkeyhint="next">
+    </div>
+    <div class="field">
+      <label for="curso">División / Curso</label>
+      <input id="curso" type="text" placeholder="Ej.: 4° Año Técnico Mecánico - T.M." enterkeyhint="done">
+    </div>
+  </section>
+
+  <!-- ==================== 02 · VARIABLE DE CONTROL ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">02</span><h2>Variable de Control del Eje</h2></div>
+    <p class="hint">Seleccioná el <b>diámetro interior d</b> del eje para interrogar la matriz del catálogo de rodamientos rígidos de bolas (serie 62).</p>
+    <div class="d-grid" id="dGrid"></div>
+  </section>
+
+  <!-- ==================== 03 · MATRIZ DEL CATÁLOGO ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">03</span><h2>Matriz del Catálogo</h2></div>
+    <div class="table-scroll">
+      <table class="matriz">
+        <thead>
+          <tr>
+            <th>d (mm)</th>
+            <th>D (mm)</th>
+            <th>B (mm)</th>
+            <th>C (kN)</th>
+            <th>C_0 (kN)</th>
+          </tr>
+        </thead>
+        <tbody id="matrizBody"></tbody>
+      </table>
+    </div>
+
+    <div class="formula" id="formulaBox">
+      <span class="fx">=BUSCARX(</span>
+      <span class="chip blue" id="fxValor">40</span>
+      <span class="fx">;</span>
+      <span class="chip green" id="fxMatriz">A2:A7</span>
+      <span class="fx">;</span>
+      <span class="chip orange" id="fxDevuelta">C2:F7</span>
+      <span class="fx">)</span>
+    </div>
+    <div class="formula-legend">
+      <b style="color:var(--cyan)">Azul</b> = valor buscado (d del eje) ·
+      <b style="color:var(--green)">Verde</b> = matriz buscada (columna d) ·
+      <b style="color:var(--orange)">Naranja</b> = matriz devuelta (D, B, C, C_0)
+    </div>
+  </section>
+
+  <!-- ==================== 04 · RESULTADO ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">04</span><h2>Resultado de la Extracción</h2></div>
+    <div class="serie-tag" id="serieTag">SERIE COMERCIAL: 6208</div>
+    <div class="result-grid">
+      <div class="res-card highlight">
+        <span class="res-label">D (mm)</span>
+        <span class="res-val" id="resD">--</span>
+        <span class="res-sub">Diámetro exterior</span>
+      </div>
+      <div class="res-card highlight">
+        <span class="res-label">B (mm)</span>
+        <span class="res-val" id="resB">--</span>
+        <span class="res-sub">Ancho total</span>
+      </div>
+      <div class="res-card highlight">
+        <span class="res-label">C (kN)</span>
+        <span class="res-val" id="resC">--</span>
+        <span class="res-sub">Carga dinámica</span>
+      </div>
+      <div class="res-card highlight">
+        <span class="res-label">C_0 (kN)</span>
+        <span class="res-val" id="resC0">--</span>
+        <span class="res-sub">Carga estática</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 05 · CONVERSIÓN ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">05</span><h2>Transformación de Unidades</h2></div>
+
+    <div class="conv">
+      <div class="conv-box">
+        <span class="lbl">Carga dinámica C</span>
+        <span class="val" id="convCkN">-- kN</span>
+      </div>
+      <div class="conv-op">× 101,97<small>→</small></div>
+      <div class="conv-box out">
+        <span class="lbl">Resultado</span>
+        <span class="val" id="convCkgf">-- kgf</span>
+      </div>
+    </div>
+
+    <div class="conv">
+      <div class="conv-box">
+        <span class="lbl">Carga estática C_0</span>
+        <span class="val" id="convC0kN">-- kN</span>
+      </div>
+      <div class="conv-op">× 101,97<small>→</small></div>
+      <div class="conv-box out">
+        <span class="lbl">Resultado</span>
+        <span class="val" id="convC0kgf">-- kgf</span>
+      </div>
+    </div>
+
+    <div class="conv-note">
+      El catálogo global entrega las cargas en <b>kilonewtons (kN)</b>. La planilla transforma
+      automáticamente a <b>kilogramos-fuerza (kgf)</b> con el factor 1 kN ≈ 101,97 kgf, para
+      integrarse a los requerimientos del cálculo mecánico local.
+    </div>
+  </section>
+
+  <!-- ==================== 06 · CONCLUSIÓN ==================== -->
+  <section class="card">
+    <div class="card-head"><span class="num">06</span><h2>Conclusión y Fundamentación</h2></div>
+    <ol class="consignas">
+      <li>¿Por qué buscar un dato "a mano" en un catálogo PDF de cientos de páginas es ineficiente y propenso al error humano?</li>
+      <li>Explicá con tus palabras qué hace la función <b>BUSCARX</b> e identificá sus tres argumentos: valor buscado, matriz buscada y matriz devuelta.</li>
+      <li>¿Por qué es necesario convertir las cargas de kN a kgf si el fabricante es global?</li>
+      <li>Indicá las dimensiones <b>D</b> y <b>B</b> obtenidas y qué representan físicamente en el montaje sobre el eje.</li>
+      <li>Describí el flujo de trabajo del técnico moderno: origen PDF → búsqueda matricial → transformación de unidades → aplicación en CAD.</li>
+    </ol>
+    <textarea id="conclusiones" rows="6"
+      placeholder="Escribí acá tu conclusión y fundamentación técnica. Este texto se incluirá en el informe .doc descargable..."></textarea>
+  </section>
+
+  <p class="foot">
+    Datos de referencia: catálogo de rodamientos rígidos de bolas serie 62 (SKF).<br>
+    Uso exclusivamente educativo · Informática Aplicada · Técnico Mecánico.
+  </p>
+
+</main>
+
+<!-- ==================== BARRA DE DESCARGA ==================== -->
+<div class="download-bar">
+  <button id="btnDescargar" class="btn-download">📥 Descargar Informe Técnico (.doc)</button>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     1. BASE DE DATOS DEL CATÁLOGO (simula la tabla de doble entrada)
+     ============================================================ */
+  var CATALOGO = [
+    { d: 20, serie: '6204', D: 47,  B: 14, C: 13.5, C0: 6.55 },
+    { d: 30, serie: '6206', D: 62,  B: 16, C: 20.3, C0: 11.2 },
+    { d: 40, serie: '6208', D: 80,  B: 18, C: 32.5, C0: 19.0 },
+    { d: 50, serie: '6210', D: 90,  B: 20, C: 37.1, C0: 23.2 },
+    { d: 60, serie: '6212', D: 110, B: 22, C: 55.3, C0: 36.0 },
+    { d: 70, serie: '6214', D: 125, B: 24, C: 63.7, C0: 45.0 }
+  ];
+
+  var FACTOR_KN_A_KGF = 101.97;   // 1 kN ≈ 101,97 kgf
+  var seleccion = 40;             // variable de control por defecto (misión: serie 6208)
+
+  /* ============================================================
+     2. UTILIDADES
+     ============================================================ */
+  function fmt(num, dec) {
+    dec = (dec === undefined) ? 2 : dec;
+    try {
+      return num.toLocaleString('es-AR', {
+        minimumFractionDigits: dec,
+        maximumFractionDigits: dec
+      });
+    } catch (e) {
+      return num.toFixed(dec).replace('.', ',');
+    }
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  function mostrarToast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function () { t.classList.remove('show'); }, 2600);
+  }
+
+  function buscarFila(d) {
+    for (var i = 0; i < CATALOGO.length; i++) {
+      if (CATALOGO[i].d === d) { return CATALOGO[i]; }
+    }
+    return CATALOGO[0];
+  }
+
+  function indiceFila(d) {
+    for (var i = 0; i < CATALOGO.length; i++) {
+      if (CATALOGO[i].d === d) { return i; }
+    }
+    return 0;
+  }
+
+  /* ============================================================
+     3. CONSTRUCCIÓN DINÁMICA DE LA INTERFAZ
+     ============================================================ */
+
+  // --- 3.1 Botones selectores de diámetro ---
+  function construirBotones() {
+    var cont = $('dGrid');
+    var html = '';
+    CATALOGO.forEach(function (f) {
+      html += '<button type="button" class="d-btn" data-d="' + f.d + '">' +
+                'd = ' + f.d + ' mm' +
+                '<span>Serie ' + f.serie + '</span>' +
+              '</button>';
+    });
+    cont.innerHTML = html;
+
+    cont.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('.d-btn');
+      if (!btn) { return; }
+      seleccion = parseInt(btn.getAttribute('data-d'), 10);
+      actualizarTodo();
+    });
+  }
+
+  // --- 3.2 Cuerpo de la matriz ---
+  function construirMatriz() {
+    var tb = $('matrizBody');
+    var html = '';
+    CATALOGO.forEach(function (f) {
+      html += '<tr data-d="' + f.d + '">' +
+                '<td class="c-d">'  + f.d          + '</td>' +
+                '<td class="c-D">'  + f.D          + '</td>' +
+                '<td class="c-B">'  + f.B          + '</td>' +
+                '<td class="c-C">'  + fmt(f.C)     + '</td>' +
+                '<td class="c-C0">' + fmt(f.C0)    + '</td>' +
+              '</tr>';
+    });
+    tb.innerHTML = html;
+  }
+
+  // --- 3.3 Resaltado del cruce matricial (estilo BUSCARX) ---
+  function resaltarMatriz() {
+    var filas = document.querySelectorAll('#matrizBody tr');
+    for (var i = 0; i < filas.length; i++) {
+      var tr = filas[i];
+      var activa = parseInt(tr.getAttribute('data-d'), 10) === seleccion;
+      tr.classList.toggle('row-active', activa);
+
+      var celdas = tr.querySelectorAll('td');
+      for (var j = 0; j < celdas.length; j++) {
+        var td = celdas[j];
+        if (td.classList.contains('c-d')) { continue; }
+        td.classList.toggle('cell-ret', activa);
+      }
+    }
+
+    // Actualizar la fórmula mostrada
+    var idx = indiceFila(seleccion);              // 0..5
+    var filaIni = idx + 2;                        // +2 porque la fila 1 es el encabezado
+    var filaFin = filaIni;                        // devolvemos solo la fila encontrada
+    $('fxValor').textContent    = seleccion;
+    $('fxMatriz').textContent   = 'A2:A7';
+    $('fxDevuelta').textContent = 'C' + filaIni + ':F' + filaFin;
+  }
+
+  // --- 3.4 Actualizar botones activos ---
+  function resaltarBotones() {
+    var botones = document.querySelectorAll('.d-btn');
+    for (var i = 0; i < botones.length; i++) {
+      var b = botones[i];
+      b.classList.toggle('active', parseInt(b.getAttribute('data-d'), 10) === seleccion);
+    }
+  }
+
+  // --- 3.5 Resultados y conversiones ---
+  function actualizarResultados() {
+    var f = buscarFila(seleccion);
+
+    $('serieTag').textContent = 'SERIE COMERCIAL: ' + f.serie + '  ·  d = ' + f.d + ' mm';
+
+    $('resD').textContent  = f.D;
+    $('resB').textContent  = f.B;
+    $('resC').textContent  = fmt(f.C, 1);
+    $('resC0').textContent = fmt(f.C0, 2);
+
+    $('convCkN').textContent   = fmt(f.C, 1)  + ' kN';
+    $('convC0kN').textContent  = fmt(f.C0, 2) + ' kN';
+
+    $('convCkgf').textContent  = fmt(f.C  * FACTOR_KN_A_KGF, 2) + ' kgf';
+    $('convC0kgf').textContent = fmt(f.C0 * FACTOR_KN_A_KGF, 2) + ' kgf';
+  }
+
+  // --- 3.6 Orquestador ---
+  function actualizarTodo() {
+    resaltarBotones();
+    resaltarMatriz();
+    actualizarResultados();
+  }
+
+  /* ============================================================
+     4. GENERADOR DEL INFORME TÉCNICO .DOC
+     ============================================================ */
+  function construirInformeHTML() {
+    var f = buscarFila(seleccion);
+    var Ckgf  = f.C  * FACTOR_KN_A_KGF;
+    var C0kgf = f.C0 * FACTOR_KN_A_KGF;
+
+    var nombre = ($('nombre').value || '').trim() || '..................................................';
+    var curso  = ($('curso').value  || '').trim() || '..................................';
+    var obs    = ($('conclusiones').value || '').trim();
+
+    var fecha = new Date().toLocaleDateString('es-AR', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+
+    // ---- Filas de la matriz reproducidas en el documento ----
+    var filasMatriz = '';
+    CATALOGO.forEach(function (x) {
+      var on = (x.d === seleccion);
+      var bg = on ? '#dff5e6' : '#ffffff';
+      var bd = on ? '1.5pt solid #1e7a45' : '0.75pt solid #999999';
+      var fw = on ? 'bold' : 'normal';
+      filasMatriz +=
+        '<tr>' +
+          '<td bgcolor="' + bg + '" style="border:' + bd + ';padding:5px;text-align:center;font-weight:' + fw + ';">' + x.d + '</td>' +
+          '<td bgcolor="' + bg + '" style="border:' + bd + ';padding:5px;text-align:center;font-weight:' + fw + ';">' + x.D + '</td>' +
+          '<td bgcolor="' + bg + '" style="border:' + bd + ';padding:5px;text-align:center;font-weight:' + fw + ';">' + x.B + '</td>' +
+          '<td bgcolor="' + bg + '" style="border:' + bd + ';padding:5px;text-align:center;font-weight:' + fw + ';">' + fmt(x.C, 1) + '</td>' +
+          '<td bgcolor="' + bg + '" style="border:' + bd + ';padding:5px;text-align:center;font-weight:' + fw + ';">' + fmt(x.C0, 2) + '</td>' +
+        '</tr>';
+    });
+
+    // ---- Bloque de conclusión ----
+    var bloqueConclusion;
+    if (obs) {
+      bloqueConclusion =
+        '<p style="font-size:11pt;line-height:1.5;text-align:justify;">' +
+          obs.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>') +
+        '</p>';
+    } else {
+      bloqueConclusion =
+        '<p style="font-size:11pt;color:#666666;font-style:italic;">' +
+          '(El alumno no completó la conclusión en la aplicación. Desarrollar en la carpeta física según las consignas orientadoras.)' +
+        '</p>';
+    }
+
+    var html = '';
+    html += '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+            'xmlns:w="urn:schemas-microsoft-com:office:word" ' +
+            'xmlns="http://www.w3.org/TR/REC-html40">';
+    html += '<head><meta charset="utf-8">';
+    html += '<title>Informe Técnico - Catálogos Digitales</title>';
+    html += '<!--[if gte mso 9]><xml><w:WordDocument>' +
+            '<w:View>Print</w:View><w:Zoom>100</w:Zoom>' +
+            '</w:WordDocument></xml><![endif]-->';
+    html += '<style>';
+    html += '@page { size:A4; margin:2cm 2cm 2cm 2cm; }';
+    html += 'body { font-family: Calibri, Arial, sans-serif; font-size:11pt; color:#1a1a1a; line-height:1.45; }';
+    html += 'h1 { font-size:15pt; color:#0b3d5c; margin:0 0 3px 0; }';
+    html += 'h2 { font-size:12.5pt; color:#0b3d5c; border-bottom:1pt solid #9ec6dd; padding-bottom:3px; margin:20px 0 8px 0; }';
+    html += 'p  { margin:6px 0; }';
+    html += 'table { border-collapse:collapse; width:100%; margin-top:8px; }';
+    html += 'th { background:#0b3d5c; color:#ffffff; border:0.75pt solid #0b3d5c; padding:6px; font-size:10pt; }';
+    html += 'td { border:0.75pt solid #999999; padding:6px; font-size:10pt; }';
+    html += '.small { font-size:9.5pt; color:#555555; }';
+    html += '.head { border-bottom:2pt solid #0b3d5c; padding-bottom:10px; margin-bottom:6px; }';
+    html += '</style></head><body>';
+
+    /* ---------- Encabezado institucional ---------- */
+    html += '<div class="head">';
+    html += '<h1>Escuela Técnica &mdash; Informática Aplicada</h1>';
+    html += '<p style="margin:2px 0;font-size:11pt;color:#0b3d5c;font-weight:bold;">' +
+            'Trabajo Práctico: Catálogos Digitales &mdash; Minería de Datos Industriales</p>';
+    html += '<p class="small" style="margin:2px 0;">Orientación: Técnico Mecánico &nbsp;|&nbsp; ' +
+            'Espacio Curricular: Informática Aplicada &nbsp;|&nbsp; Fecha: ' + fecha + '</p>';
+    html += '</div>';
+
+    /* ---------- Datos del estudiante ---------- */
+    html += '<h2>1. Datos del Estudiante</h2>';
+    html += '<table>';
+    html += '<tr><td style="width:32%;background:#f2f7fa;font-weight:bold;">Nombre y Apellido</td>' +
+            '<td>' + nombre.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</td></tr>';
+    html += '<tr><td style="background:#f2f7fa;font-weight:bold;">División / Curso</td>' +
+            '<td>' + curso.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</td></tr>';
+    html += '<tr><td style="background:#f2f7fa;font-weight:bold;">Componente analizado</td>' +
+            '<td>Rodamiento rígido de bolas &mdash; Serie comercial ' + f.serie + '</td></tr>';
+    html += '</table>';
+
+    /* ---------- Objeto del trabajo ---------- */
+    html += '<h2>2. Objeto del Trabajo</h2>';
+    html += '<p style="text-align:justify;">Extraer de forma automatizada, a partir de la matriz de doble entrada ' +
+            'de un catálogo técnico industrial, las dimensiones exteriores y las cargas operativas correspondientes ' +
+            'a un rodamiento rígido de bolas cuyo diámetro interior de eje es <b>d = ' + f.d + ' mm</b>. ' +
+            'Posteriormente, transformar las unidades de carga del fabricante global (kN) al sistema ' +
+            'kilogramo-fuerza (kgf) utilizado en el cálculo mecánico local.</p>';
+
+    /* ---------- Resumen de la selección ---------- */
+    html += '<h2>3. Resumen de la Selección del Componente</h2>';
+    html += '<table>';
+    html += '<tr>' +
+              '<th>Variable</th><th>Símbolo</th><th>Valor</th><th>Unidad</th>' +
+            '</tr>';
+    html += '<tr><td>Diámetro interior (eje)</td><td style="text-align:center;">d</td>' +
+            '<td style="text-align:center;font-weight:bold;">' + f.d + '</td><td style="text-align:center;">mm</td></tr>';
+    html += '<tr><td>Diámetro exterior</td><td style="text-align:center;">D</td>' +
+            '<td style="text-align:center;font-weight:bold;">' + f.D + '</td><td style="text-align:center;">mm</td></tr>';
+    html += '<tr><td>Ancho total</td><td style="text-align:center;">B</td>' +
+            '<td style="text-align:center;font-weight:bold;">' + f.B + '</td><td style="text-align:center;">mm</td></tr>';
+    html += '<tr><td>Serie comercial</td><td style="text-align:center;">&mdash;</td>' +
+            '<td style="text-align:center;font-weight:bold;">' + f.serie + '</td><td style="text-align:center;">&mdash;</td></tr>';
+    html += '</table>';
+    html += '<p class="small">Las dimensiones D y B quedan vinculadas a la variable de control d mediante la ' +
+            'búsqueda matricial, reemplazando la lectura secuencial y manual del catálogo en PDF.</p>';
+
+    /* ---------- Matriz del catálogo ---------- */
+    html += '<h2>4. Matriz de Doble Entrada del Catálogo (Resolución tipo BUSCARX)</h2>';
+    html += '<p style="font-family:Consolas,monospace;font-size:10pt;background:#f2f7fa;' +
+            'border:0.75pt dashed #9ec6dd;padding:7px;">' +
+            '=BUSCARX( ' + f.d + ' ; A2:A7 ; C' + (indiceFila(seleccion) + 2) + ':F' + (indiceFila(seleccion) + 2) + ' )' +
+            '</p>';
+    html += '<table>';
+    html += '<tr>' +
+              '<th>d (mm)</th><th>D (mm)</th><th>B (mm)</th><th>C (kN)</th><th>C_0 (kN)</th>' +
+            '</tr>';
+    html += filasMatriz;
+    html += '</table>';
+    html += '<p class="small">La fila resaltada corresponde al cruce exacto localizado por el software. ' +
+            'La búsqueda manual visual cruzando filas y columnas presenta alto riesgo de error humano y fatiga.</p>';
+
+    /* ---------- Extracción de cargas y conversión ---------- */
+    html += '<h2>5. Extracción de Cargas y Memoria de Cálculo (kN &rarr; kgf)</h2>';
+    html += '<table>';
+    html += '<tr>' +
+              '<th>Carga</th><th>Valor catálogo (kN)</th><th>Factor de conversión</th>' +
+              '<th>Resultado (kgf)</th>' +
+            '</tr>';
+    html += '<tr>' +
+              '<td>Carga dinámica &nbsp;<b>C</b></td>' +
+              '<td style="text-align:center;">' + fmt(f.C, 1) + '</td>' +
+              '<td style="text-align:center;">&times; 101,97</td>' +
+              '<td style="text-align:center;font-weight:bold;">' + fmt(Ckgf, 2) + '</td>' +
+            '</tr>';
+    html += '<tr>' +
+              '<td>Carga estática &nbsp;<b>C_0</b></td>' +
+              '<td style="text-align:center;">' + fmt(f.C0, 2) + '</td>' +
+              '<td style="text-align:center;">&times; 101,97</td>' +
+              '<td style="text-align:center;font-weight:bold;">' + fmt(C0kgf, 2) + '</td>' +
+            '</tr>';
+    html += '</table>';
+    html += '<p style="font-family:Consolas,monospace;font-size:10pt;margin-top:10px;">' +
+            'C&nbsp;&nbsp;&nbsp;= ' + fmt(f.C, 1) + ' kN &times; 101,97 = <b>' + fmt(Ckgf, 2) + ' kgf</b><br>' +
+            'C_0 = ' + fmt(f.C0, 2) + ' kN &times; 101,97 = <b>' + fmt(C0kgf, 2) + ' kgf</b>' +
+            '</p>';
+    html += '<p class="small">Factor adoptado: 1 kN &asymp; 101,97 kgf. La planilla de cálculo no solo extrae ' +
+            'el dato: lo transforma automáticamente para integrarlo a los requerimientos del cálculo mecánico local.</p>';
+
+    /* ---------- Conclusión ---------- */
+    html += '<h2>6. Conclusión y Fundamentación Técnica del Alumno</h2>';
+    html += bloqueConclusion;
+    html += '<p style="font-size:10pt;color:#444444;margin-top:14px;">' +
+            '<b>Consignas orientadoras para la carpeta física:</b></p>';
+    html += '<ol style="font-size:10.5pt;line-height:1.5;">';
+    html += '<li>¿Por qué buscar un dato manualmente en un catálogo PDF de cientos de páginas es ineficiente y propenso al error humano?</li>';
+    html += '<li>Explicar qué hace la función BUSCARX e identificar sus tres argumentos: valor buscado, matriz buscada y matriz devuelta.</li>';
+    html += '<li>Justificar por qué es necesario convertir las cargas de kN a kgf si el fabricante es global.</li>';
+    html += '<li>Indicar las dimensiones D y B obtenidas y qué representan físicamente en el montaje sobre el eje.</li>';
+    html += '<li>Describir el flujo de trabajo del técnico moderno: origen PDF &rarr; búsqueda matricial &rarr; transformación de unidades &rarr; aplicación en CAD.</li>';
+    html += '</ol>';
+
+    /* ---------- Pie ---------- */
+    html += '<p class="small" style="margin-top:22px;border-top:0.75pt solid #cccccc;padding-top:8px;">' +
+            'Informe generado automáticamente desde la aplicación "Buscador Quirúrgico de Catálogos Industriales". ' +
+            'Datos de referencia: catálogo de rodamientos rígidos de bolas serie 62. Uso exclusivamente educativo.</p>';
+
+    html += '</body></html>';
+    return html;
+  }
+
+  function descargarInforme() {
+    try {
+      var html = construirInformeHTML();
+
+      // Blob con BOM UTF-8 para que Word respete los acentos
+      var blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+
+      var f = buscarFila(seleccion);
+      var nombreRaw = ($('nombre').value || '').trim();
+      var nombreArchivo = 'Informe_Tecnico_' +
+        (nombreRaw ? nombreRaw.replace(/[^a-zA-Z0-9ÁÉÍÓÚáéíóúÑñ ]/g, '').replace(/\s+/g, '_') + '_' : '') +
+        'd' + f.d + 'mm_' + f.serie + '.doc';
+
+      // Descarga compatible con Chrome / Firefox de Android
+      if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveOrOpenBlob(blob, nombreArchivo);
+      } else {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = nombreArchivo;
+        a.rel = 'noopener';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(function () {
+          if (a.parentNode) { a.parentNode.removeChild(a); }
+          URL.revokeObjectURL(url);
+        }, 2000);
+      }
+
+      mostrarToast('✅ Informe generado: ' + nombreArchivo);
+
+    } catch (err) {
+      mostrarToast('⚠️ No se pudo generar el archivo. Reintentá.');
+      if (window.console) { console.error(err); }
+    }
+  }
+
+  /* ============================================================
+     5. INICIALIZACIÓN
+     ============================================================ */
+  function init() {
+    construirBotones();
+    construirMatriz();
+    actualizarTodo();
+
+    $('btnDescargar').addEventListener('click', descargarInforme);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+</html>
